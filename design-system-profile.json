@@ -1,0 +1,404 @@
+{
+  "designSystemProfile": {
+    "metadata": {
+      "name": "DesignAli Creative Suite Design System",
+      "version": "1.0.0",
+      "description": "A comprehensive design system profile for a modern creative suite application with professional tools and resources",
+      "category": "creative-suite-dashboard",
+      "aesthetic": "modern-professional-vibrant"
+    },
+    "colorSystem": {
+      "totalColors": 5,
+      "palette": {
+        "primary": {
+          "type": "brand",
+          "description": "Deep neutral used for text and primary UI elements",
+          "lightMode": "oklch(0.205 0 0)",
+          "darkMode": "oklch(0.985 0 0)",
+          "usage": ["primary buttons", "active states", "brand elements", "emphasized text"]
+        },
+        "background": {
+          "type": "neutral",
+          "description": "Pure white in light mode, deep dark in dark mode",
+          "lightMode": "oklch(1 0 0)",
+          "darkMode": "oklch(0.145 0 0)",
+          "usage": ["page backgrounds", "card backgrounds", "main surfaces"]
+        },
+        "muted": {
+          "type": "neutral",
+          "description": "Subtle gray for secondary backgrounds",
+          "lightMode": "oklch(0.97 0 0)",
+          "darkMode": "oklch(0.269 0 0)",
+          "usage": ["secondary backgrounds", "hover states", "disabled elements", "subtle containers"]
+        },
+        "accent": {
+          "type": "semantic",
+          "description": "Gradients using vibrant colors for hero sections and emphasis",
+          "gradients": [
+            "from-violet-600 via-indigo-600 to-blue-600",
+            "from-pink-600 via-red-600 to-orange-600",
+            "from-teal-600 via-cyan-600 to-blue-600",
+            "from-purple-600 via-violet-600 to-indigo-600",
+            "from-green-600 via-emerald-600 to-teal-600"
+          ],
+          "usage": ["hero sections", "featured cards", "call-to-action backgrounds", "visual highlights"]
+        },
+        "border": {
+          "type": "neutral",
+          "description": "Subtle border color for separating elements",
+          "lightMode": "oklch(0.922 0 0)",
+          "darkMode": "oklch(0.269 0 0)",
+          "usage": ["card borders", "dividers", "input borders", "section separators"]
+        }
+      },
+      "iconColors": {
+        "description": "Vibrant colors applied to individual icons for visual variety",
+        "colors": [
+          "violet-500",
+          "orange-500",
+          "pink-500",
+          "blue-500",
+          "red-500",
+          "fuchsia-500",
+          "teal-500",
+          "red-600",
+          "emerald-500",
+          "indigo-500",
+          "amber-500",
+          "purple-500"
+        ],
+        "usage": "Applied to individual app/feature icons for visual distinction and personality"
+      },
+      "semanticTokens": {
+        "description": "Design tokens for consistent theming",
+        "tokens": [
+          "background",
+          "foreground",
+          "card",
+          "card-foreground",
+          "popover",
+          "primary",
+          "secondary",
+          "muted",
+          "accent",
+          "destructive",
+          "border",
+          "input",
+          "ring"
+        ]
+      }
+    },
+    "typography": {
+      "fontFamilies": 2,
+      "fonts": {
+        "sans": {
+          "name": "Geist",
+          "usage": "Primary font for all UI elements, body text, headings",
+          "weights": ["normal", "medium", "semibold", "bold"],
+          "fallback": "Geist Fallback"
+        },
+        "mono": {
+          "name": "Geist Mono",
+          "usage": "Code snippets, technical content, specialized displays",
+          "fallback": "Geist Mono Fallback"
+        }
+      },
+      "scale": {
+        "xs": "0.75rem (12px) - small labels, captions",
+        "sm": "0.875rem (14px) - secondary text, metadata",
+        "base": "1rem (16px) - body text, descriptions",
+        "lg": "1.125rem (18px) - card titles, secondary headings",
+        "xl": "1.25rem (20px) - section headers",
+        "2xl": "1.5rem (24px) - page titles",
+        "3xl": "1.875rem (30px) - hero headings"
+      },
+      "lineHeight": {
+        "default": "1.5 (leading-normal)",
+        "relaxed": "1.625 (leading-relaxed) - used for body text for better readability",
+        "usage": "Maintains comfortable reading experience across all text sizes"
+      },
+      "fontWeights": {
+        "normal": "400 - body text",
+        "medium": "500 - emphasis, labels",
+        "semibold": "600 - headings, titles",
+        "bold": "700 - strong emphasis, hero text"
+      }
+    },
+    "layoutSystem": {
+      "methodology": "Flexbox-first with Grid for complex layouts",
+      "containerStrategy": "Full-height layouts with sidebar + main content pattern",
+      "patterns": {
+        "appShell": {
+          "structure": "Fixed sidebar (256px) + flexible main content area",
+          "behavior": "Collapsible sidebar with toggle, transforms off-canvas on mobile",
+          "responsiveness": "Mobile: overlay sidebar with backdrop blur, Desktop: persistent sidebar"
+        },
+        "contentGrid": {
+          "small": "grid-cols-1 - mobile single column",
+          "medium": "grid-cols-2 md:grid-cols-3 - tablets and small desktops",
+          "large": "grid-cols-4 lg:grid-cols-4 - large desktops for card grids",
+          "gaps": "gap-3 (12px) for tight layouts, gap-4 (16px) for standard spacing, gap-6 (24px) for loose layouts"
+        },
+        "flexPatterns": {
+          "header": "flex items-center justify-between - horizontal alignment",
+          "cardContent": "flex flex-col gap-2 - vertical stacking with consistent spacing",
+          "iconText": "flex items-center gap-3 - icons paired with text"
+        }
+      },
+      "spacing": {
+        "scale": "Tailwind default scale (4px base unit)",
+        "common": ["p-3 (12px)", "p-4 (16px)", "p-6 (24px)", "p-8 (32px)"],
+        "gaps": "Prefer gap utilities over margin for spacing between flex/grid children",
+        "sections": "space-y-4 or space-y-8 between major sections"
+      },
+      "responsive": {
+        "breakpoints": ["mobile: <640px", "md: 768px", "lg: 1024px"],
+        "strategy": "Mobile-first design with progressive enhancement",
+        "hiddenElements": "hidden md:flex for desktop-only, md:hidden for mobile-only"
+      }
+    },
+    "componentPatterns": {
+      "cards": {
+        "borderRadius": "rounded-3xl (24px) - heavily rounded for modern aesthetic",
+        "borders": "border or border-2 depending on emphasis",
+        "hoverState": "hover:border-primary/50 - subtle border color shift",
+        "shadow": "Minimal shadows, rely on borders for depth",
+        "structure": "CardHeader + CardContent + CardFooter composition"
+      },
+      "buttons": {
+        "borderRadius": "rounded-2xl (16px) - consistent rounded buttons",
+        "variants": ["default (primary)", "secondary", "outline", "ghost"],
+        "sizes": ["sm", "default", "lg", "icon"],
+        "iconPlacement": "mr-2 for left icons, ml-2 for right icons",
+        "hoverStates": "Implicit from shadcn variants"
+      },
+      "badges": {
+        "borderRadius": "rounded-xl (12px) or rounded-full for pill style",
+        "variants": ["default", "outline", "secondary"],
+        "usage": "Status indicators, category tags, notification counts",
+        "placement": "Top-right of cards, inline with text, as metadata"
+      },
+      "inputs": {
+        "borderRadius": "rounded-2xl (16px) for consistency",
+        "withIcons": "Absolute positioned icons (left-3 top-3) with pl-9 padding",
+        "background": "bg-muted for search inputs",
+        "focus": "ring system from design tokens"
+      },
+      "navigation": {
+        "sidebarItems": "rounded-2xl with hover:bg-muted, active gets bg-primary/10 text-primary",
+        "tabs": "TabsList with rounded-2xl container, TabsTrigger rounded-xl",
+        "collapsible": "ChevronDown icon with rotate-180 transform on expand"
+      },
+      "progress": {
+        "height": "h-2 - thin progress bars",
+        "borderRadius": "rounded-xl",
+        "usage": "Project completion, installation progress, learning paths"
+      },
+      "avatars": {
+        "sizes": ["h-6 w-6", "h-9 w-9", "h-10 w-10"],
+        "borders": "border-2 border-primary for emphasis",
+        "fallback": "Initials on colored background"
+      }
+    },
+    "animations": {
+      "library": "Framer Motion",
+      "patterns": {
+        "pageTransitions": {
+          "initial": "{ opacity: 0, y: 10 }",
+          "animate": "{ opacity: 1, y: 0 }",
+          "exit": "{ opacity: 0, y: -10 }",
+          "duration": "0.2s - fast transitions"
+        },
+        "cardHover": {
+          "whileHover": "{ scale: 1.02, y: -5 } - subtle lift effect",
+          "whileTap": "{ scale: 0.98 } - press feedback"
+        },
+        "backgroundGradient": {
+          "animate": "Cycles through different radial gradient positions",
+          "duration": "30s with infinite repeat",
+          "opacity": "0.2 - subtle ambient animation"
+        },
+        "spinningElement": {
+          "animate": "{ rotate: 360 }",
+          "duration": "50s linear infinite"
+        }
+      },
+      "transitions": {
+        "sidebar": "transition-transform duration-300 ease-in-out",
+        "borders": "transition-all duration-300 for hover effects",
+        "mode": "AnimatePresence with mode='wait' for tab switching"
+      }
+    },
+    "visualElements": {
+      "icons": {
+        "library": "Lucide React",
+        "sizes": ["h-3 w-3", "h-4 w-4", "h-5 w-5", "h-6 w-6"],
+        "colorStrategy": "Individual vibrant colors per icon for visual variety",
+        "usage": "Paired with text in navigation, feature cards, buttons"
+      },
+      "images": {
+        "placeholder": "/placeholder.svg with query parameters for semantic descriptions",
+        "aspectRatios": ["aspect-video (16:9) for media", "aspect-[4/3] for cards", "aspect-square for avatars/icons"],
+        "hoverEffect": "scale-105 transition on image hover for engagement"
+      },
+      "backgroundPatterns": {
+        "heroSections": "Vibrant multi-color gradients (3 colors) with from/via/to pattern",
+        "ambient": "Animated radial gradient overlay at 20% opacity",
+        "structure": "Linear gradients for featured sections, radial for ambient effects"
+      },
+      "logoDesign": {
+        "shape": "Square with rounded-2xl corners",
+        "background": "Gradient from-purple-600 to-blue-600",
+        "icon": "Wand2 icon in white",
+        "size": "size-10 (40x40px)"
+      }
+    },
+    "dataVisualization": {
+      "progressBars": {
+        "height": "h-2 (8px)",
+        "borderRadius": "rounded-xl",
+        "colors": "Primary color for fill",
+        "labels": "Percentage shown above bar"
+      },
+      "metrics": {
+        "layout": "Flex row with icons + text",
+        "iconSize": "h-4 w-4",
+        "textSize": "text-sm",
+        "usage": "File counts, member counts, view counts, engagement metrics"
+      },
+      "badges": {
+        "status": "Colored badges for categories, levels, and states",
+        "counts": "Outline badges with numbers for notifications and counts"
+      }
+    },
+    "interactionPatterns": {
+      "hoverStates": {
+        "cards": "Border color shift + scale + vertical lift",
+        "buttons": "Background color change (implicit from variants)",
+        "listItems": "Background color shift (hover:bg-muted)",
+        "images": "Scale transform (scale-105)"
+      },
+      "activeStates": {
+        "navigation": "bg-primary/10 text-primary for active items",
+        "tabs": "data-[state=active] styling with background change"
+      },
+      "focus": {
+        "strategy": "Ring system using --ring design token",
+        "visibility": "outline-ring/50 for accessibility"
+      },
+      "expandCollapse": {
+        "indicator": "ChevronDown icon with rotate-180 transform",
+        "content": "Conditional render based on state"
+      }
+    },
+    "contentStructure": {
+      "sections": [
+        {
+          "name": "Hero/Featured Section",
+          "pattern": "Gradient background with CTA buttons, badge accent, large heading",
+          "spacing": "p-8 padding, space-y-4 internal spacing"
+        },
+        {
+          "name": "Card Grid Section",
+          "pattern": "Heading + grid of cards with consistent structure",
+          "spacing": "space-y-4 between heading and grid, gap-3 in grid"
+        },
+        {
+          "name": "List/Table Section",
+          "pattern": "Bordered container with divided rows",
+          "spacing": "p-4 per row, divide-y for separators"
+        },
+        {
+          "name": "Two-Column Split",
+          "pattern": "grid grid-cols-1 md:grid-cols-2 gap-8",
+          "usage": "Recent files + Active projects side by side"
+        }
+      ],
+      "hierarchy": {
+        "pageTitle": "text-2xl font-semibold mb-4",
+        "sectionTitle": "text-2xl font-semibold",
+        "cardTitle": "text-lg font-semibold (CardTitle)",
+        "cardDescription": "text-sm text-muted-foreground (CardDescription)",
+        "metadata": "text-xs or text-sm text-muted-foreground"
+      }
+    },
+    "responsiveStrategy": {
+      "mobile": {
+        "navigation": "Hamburger menu opens overlay sidebar with backdrop",
+        "grid": "Single column layouts (grid-cols-1)",
+        "buttons": "Full width CTAs in hero sections",
+        "spacing": "Reduced padding (p-4 vs p-6)",
+        "tabs": "Scrollable TabsList"
+      },
+      "tablet": {
+        "navigation": "Persistent sidebar appears",
+        "grid": "2-3 columns (grid-cols-2 md:grid-cols-3)",
+        "layout": "Two-column splits for content sections"
+      },
+      "desktop": {
+        "navigation": "Full persistent sidebar",
+        "grid": "3-4 columns (lg:grid-cols-4)",
+        "maxWidth": "No max-width constraints, uses full viewport",
+        "decorative": "Animated gradient backgrounds and decorative elements visible"
+      }
+    },
+    "stateManagement": {
+      "patterns": [
+        "useState for local UI state (sidebar, tabs, mobile menu)",
+        "Conditional rendering for expanded/collapsed states",
+        "AnimatePresence for smooth tab transitions",
+        "Progress simulation with setTimeout/useEffect"
+      ]
+    },
+    "accessibilityPatterns": {
+      "tooltips": "TooltipProvider wrapping icon buttons with descriptive content",
+      "avatars": "AvatarFallback with initials",
+      "badges": "Semantic variants (outline, secondary) for different contexts",
+      "focus": "outline-ring/50 for visible focus states",
+      "semanticHTML": "main, section, header tags for structure"
+    },
+    "designPrinciples": {
+      "aesthetic": "Modern, vibrant, professional",
+      "roundness": "Heavy use of rounded corners (16-24px) for friendly, modern feel",
+      "colorApproach": "Neutral base with vibrant gradient accents for features",
+      "whitespace": "Generous padding and gaps for breathing room",
+      "consistency": "Repeating patterns across all sections (cards, buttons, badges)",
+      "hierarchy": "Clear visual hierarchy through size, weight, and color",
+      "motion": "Subtle animations enhance user experience without distraction",
+      "density": "Balanced information density with appropriate grouping"
+    },
+    "usageGuidelines": {
+      "whenToUse": [
+        "Creative suite dashboards",
+        "SaaS application interfaces",
+        "Content management platforms",
+        "Learning management systems",
+        "Project management tools",
+        "Portfolio platforms",
+        "Creative tool aggregators"
+      ],
+      "keyFeatures": [
+        "Collapsible sidebar navigation with nested items",
+        "Multi-tab content organization",
+        "Card-based content display",
+        "Gradient hero sections for emphasis",
+        "Icon-rich visual language",
+        "Progress tracking and metrics",
+        "Community/social features integration",
+        "Responsive mobile-first design"
+      ],
+      "replicationSteps": [
+        "1. Establish 5-color palette: 1 primary (neutral), 2 supporting neutrals, vibrant gradient accents, borders",
+        "2. Set up 2 font families (sans + mono) with consistent scale",
+        "3. Create app shell with fixed sidebar (256px) + flexible main content",
+        "4. Use rounded-3xl for cards, rounded-2xl for buttons/inputs, rounded-xl for smaller elements",
+        "5. Implement gradient hero sections with from-via-to pattern using 3 colors",
+        "6. Build card grids with consistent gap-3 spacing",
+        "7. Add hover states: card scale + lift, border color shifts",
+        "8. Use Framer Motion for page transitions and interactive elements",
+        "9. Apply vibrant colors to individual icons for visual variety",
+        "10. Implement mobile-first responsive breakpoints with overlay sidebar"
+      ]
+    }
+  }
+}

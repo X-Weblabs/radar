@@ -1,0 +1,13 @@
+Modifications:
+- No one should create an account for themselves 
+- The radar admin is the one who creates other's accounts 
+- The hospital admin is the one who adds their drivers & ambos
+- The hospital admin screen should show the left sidebar with different options to view different screens for Hospitals, Ambos, Drivers, Emergency calls, each section with a table to show all, the drivers and ambos tables each record should have a button "track" to track their location live, if they're dispatched it should show expected arrival time with a pusling or blinking red circle to indicate emergency when they're a certain distance close to that hospital 
+- When making an emergency call, gender should be specified, room or house number
+- on a driver's page, drivers should also see the dispatch list of all their dispatches (previous and assigned)
+- also implement browser notifications to drivers and hospitals after an ai has dispatched a patient to them(after the n8n webhooks have been implemented for now they haven't)
+- On each driver details, it should be visible how many times they've been dispatched, their response times, the forwarded calls etc 
+- callers can rate the hospitals and ambo and drivers based on their response times, their care  which are reviewed by the hospitals and they contribute to their ratings
+- On the dispatched calls on the driver screen, if the driver can't proceed to the call ie they have a car problem, they can click forward dispatch, which then the dispatch goes back to the AI and agian the process if searching the db for the nearest available driver happens this time excluding this driver who forwarded the call
+- when the driver forwards the dispatch they have to provide a reason for that ie car trouble
+- clear logs are to be kept with timestamps and timelapse ie in an emergency call, a dotted line connecting timestamps like call at 09:30:15 am, dispatched driver Jane Doe ambo AZ325 at 09:30:25 am, if forwarded forwarded to driver John Doe ambo AZ786 at 09:31:12, caller picked at .... Dispatched to hospital xyz at ......
