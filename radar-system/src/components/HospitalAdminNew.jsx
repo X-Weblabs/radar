@@ -14,9 +14,12 @@ const HospitalAdminNew = () => {
   const { currentUser, userHospitalId, userHospitalName } = useAuth();
   const [activeSection, setActiveSection] = useState('hospitals');
   const [hospitals, setHospitals] = useState([]);
+  const [allHospitals, setAllHospitals] = useState([]);
   const [ambulances, setAmbulances] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [emergencyCalls, setEmergencyCalls] = useState([]);
+  const [manualAssignments, setManualAssignments] = useState({});
+  const [referralSelections, setReferralSelections] = useState({});
   const [trackingAmbulance, setTrackingAmbulance] = useState(null);
   const [trackingDriver, setTrackingDriver] = useState(null);
   const [hospitalLocation, setHospitalLocation] = useState({ lat: -25.7479, lng: 28.2293 });
@@ -60,6 +63,10 @@ const HospitalAdminNew = () => {
         }
         setPatients(hospitalRecord.patients || []);
       }
+    });
+
+    const unsubscribeAllHospitals = onSnapshot(collection(db, 'hospitals'), (snapshot) => {
+      setAllHospitals(snapshot.docs.map(docSnapshot => ({ id: docSnapshot.id, ...docSnapshot.data() })));
     });
 
     // Get drivers for this hospital
@@ -119,6 +126,7 @@ const HospitalAdminNew = () => {
 
     return () => {
       unsubscribeHospitals();
+      unsubscribeAllHospitals();
       unsubscribeDrivers();
       unsubscribeAmbulances();
       callUnsubscribers.forEach(unsub => unsub());
@@ -134,6 +142,12 @@ const HospitalAdminNew = () => {
       avgResponseTime: driver.avgResponseTime || 'N/A',
       forwardedCalls: driver.forwardedCalls || 0,
     };
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    if (method === 'medical_aid') return 'Medical Aid';
+    if (method === 'bank') return 'Bank';
+    return 'Cash';
   };
 
   const calculateDistanceToHospital = (ambulanceLocation) => {
@@ -331,6 +345,96 @@ const HospitalAdminNew = () => {
     } catch (error) {
       console.error('Error unassigning driver:', error);
       alert('Failed to unassign driver. Please try again.');
+    }
+  };
+
+  const handleManualAssignDriver = async (call) => {
+    const selectedDriverId = manualAssignments[call.id];
+    if (!selectedDriverId) {
+      alert('Select a driver first.');
+      return;
+    }
+
+    const selectedDriver = drivers.find((driver) => driver.id === selectedDriverId);
+    if (!selectedDriver) {
+      alert('Selected driver was not found.');
+      return;
+    }
+
+    const assignedAmbulance = ambulances.find((ambulance) => ambulance.driverId === selectedDriver.id);
+    const now = new Date().toISOString();
+
+    try {
+      const callRef = doc(db, 'emergencyCalls', call.id);
+      await updateDoc(callRef, {
+        assignedDriverId: selectedDriver.id,
+        assignedDriver: selectedDriver.name || '',
+        assignedVehicle: selectedDriver.assignedVehicle || assignedAmbulance?.vehicleNumber || '',
+        dispatchedAmbulance: selectedDriver.assignedVehicle || assignedAmbulance?.vehicleNumber || '',
+        status: 'dispatched',
+        dispatchedAt: now,
+        assignmentMode: 'manual',
+        manuallyAssignedAt: now,
+        manuallyAssignedByHospitalId: userHospitalId || null,
+        manuallyAssignedByHospitalName: userHospitalName || '',
+      });
+
+      const driverRef = doc(db, 'users', selectedDriver.id);
+      await updateDoc(driverRef, {
+        status: 'dispatched',
+        dispatchedCallId: call.id,
+        assignedCallId: call.id,
+        lastStatusUpdatedAt: now,
+      });
+
+      if (assignedAmbulance?.id) {
+        const ambulanceRef = doc(db, 'ambulances', assignedAmbulance.id);
+        await updateDoc(ambulanceRef, {
+          status: 'dispatched',
+          currentCallId: call.id,
+        });
+      }
+
+      setManualAssignments((prev) => ({ ...prev, [call.id]: '' }));
+      alert('Driver manually assigned successfully.');
+    } catch (error) {
+      console.error('Error manually assigning driver:', error);
+      alert('Failed to assign driver manually. Please try again.');
+    }
+  };
+
+  const handleReferCall = async (call) => {
+    const referredHospitalId = referralSelections[call.id];
+    if (!referredHospitalId) {
+      alert('Select a hospital first.');
+      return;
+    }
+
+    const targetHospital = allHospitals.find((hospital) => hospital.id === referredHospitalId);
+    if (!targetHospital) {
+      alert('Selected hospital was not found.');
+      return;
+    }
+
+    const confirmRefer = window.confirm(`Refer this emergency to ${targetHospital.name}?`);
+    if (!confirmRefer) return;
+
+    try {
+      const callRef = doc(db, 'emergencyCalls', call.id);
+      const referredAt = new Date().toISOString();
+      await updateDoc(callRef, {
+        assignedHospitalId: targetHospital.id,
+        assignedHospital: targetHospital.name,
+        referredAt,
+        referredByHospitalId: userHospitalId || null,
+        referredByHospitalName: userHospitalName || '',
+        status: call.status === 'completed' ? 'referred' : call.status,
+      });
+      setReferralSelections((prev) => ({ ...prev, [call.id]: '' }));
+      alert('Emergency referred successfully.');
+    } catch (error) {
+      console.error('Error referring emergency call:', error);
+      alert('Failed to refer emergency call. Please try again.');
     }
   };
 
@@ -911,7 +1015,14 @@ const HospitalAdminNew = () => {
             No emergency calls have been dispatched to this hospital yet.
           </div>
         )}
-        {emergencyCalls.map(call => (
+        {emergencyCalls.map((call) => {
+          const assignableDrivers = drivers.filter((driver) => {
+            const isAssignedToAnotherCall = driver.assignedCallId && driver.assignedCallId !== call.id;
+            return !isAssignedToAnotherCall;
+          });
+          const referableHospitals = allHospitals.filter((hospital) => hospital.id !== userHospitalId);
+
+          return (
           <div key={call.id} className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -936,7 +1047,7 @@ const HospitalAdminNew = () => {
             <div className="space-y-2">
               <div className="flex items-start gap-2">
                 <Phone className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-gray-600">{call.callerPhone}</p>
+                <p className="text-xs text-gray-600">{call.callerName || 'Anonymous Caller'}</p>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
@@ -952,15 +1063,77 @@ const HospitalAdminNew = () => {
               {call.roomNumber && (
                 <p className="text-xs text-gray-600">Room/House: {call.roomNumber}</p>
               )}
+              <p className="text-xs text-gray-600">Payment: {getPaymentMethodLabel(call.paymentMethod)}</p>
+              {call.paymentMethod === 'medical_aid' && call.medicalAidName && (
+                <p className="text-xs text-gray-600">Medical Aid: {call.medicalAidName}</p>
+              )}
+              {call.assignedDriver && (
+                <p className="text-xs text-gray-600">Assigned Driver: {call.assignedDriver}</p>
+              )}
               {call.dispatchedAmbulance && (
                 <div className="mt-2 pt-2 border-t border-gray-200">
                   <p className="text-xs text-gray-600">Ambulance: {call.dispatchedAmbulance}</p>
                   {call.eta && <p className="text-xs text-gray-600">ETA: {call.eta}</p>}
                 </div>
               )}
+
+              {(call.status === 'pending' || !call.assignedDriverId) && (
+                <div className="pt-2 border-t border-gray-200 space-y-2">
+                  <p className="text-xs font-medium text-gray-700">Manual Driver Assignment</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select
+                      value={manualAssignments[call.id] || ''}
+                      onChange={(e) => setManualAssignments((prev) => ({ ...prev, [call.id]: e.target.value }))}
+                      className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-teal-500"
+                    >
+                      <option value="">Select available driver</option>
+                      {assignableDrivers.map((driver) => (
+                        <option key={driver.id} value={driver.id}>
+                          {driver.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => handleManualAssignDriver(call)}
+                      className="px-3 py-2 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                    >
+                      Assign Driver
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {referableHospitals.length > 0 && (
+                <div className="pt-2 border-t border-gray-200 space-y-2">
+                  <p className="text-xs font-medium text-gray-700">Refer to Another Hospital</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select
+                      value={referralSelections[call.id] || ''}
+                      onChange={(e) => setReferralSelections((prev) => ({ ...prev, [call.id]: e.target.value }))}
+                      className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-red-500"
+                    >
+                      <option value="">Select hospital</option>
+                      {referableHospitals.map((hospital) => (
+                        <option key={hospital.id} value={hospital.id}>
+                          {hospital.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => handleReferCall(call)}
+                      className="px-3 py-2 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    >
+                      Refer
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

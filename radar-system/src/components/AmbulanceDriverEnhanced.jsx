@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useJsApiLoader, GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
-import { Ambulance, Navigation, MapPin, Hospital, Phone, Clock, AlertTriangle, List, CheckCircle, XCircle, ExternalLink, Truck, Users } from 'lucide-react';
+import { Ambulance, Navigation, MapPin, Hospital, Clock, AlertTriangle, List, CheckCircle, XCircle, ExternalLink, Truck, Users, User } from 'lucide-react';
 import { GOOGLE_MAPS_API_KEY, defaultCenter } from '../config/googleMaps';
 import { ref, set } from 'firebase/database';
 import { rtdb } from '../config/firebase';
-import { collection, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, updateDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { findNearestHospital, calculateETA, calculateDistance, formatTimestamp } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,11 @@ import Header from './Header';
 
 const DISPATCH_STATUSES = new Set(['pending', 'dispatched', 'transporting']);
 const normalizeDriverStatus = (value) => (DISPATCH_STATUSES.has(value) ? value : 'available');
+const getPaymentMethodLabel = (method) => {
+  if (method === 'medical_aid') return 'Medical Aid';
+  if (method === 'bank') return 'Bank';
+  return 'Cash';
+};
 
 const AmbulanceDriverEnhanced = () => {
   const { currentUser } = useAuth();
@@ -27,6 +32,7 @@ const AmbulanceDriverEnhanced = () => {
   const [forwardReason, setForwardReason] = useState('');
   const [showDispatchList, setShowDispatchList] = useState(false);
   const [dispatchHistory, setDispatchHistory] = useState([]);
+  const [availableCalls, setAvailableCalls] = useState([]);
   const [driverProfile, setDriverProfile] = useState(null);
   const [hospitals, setHospitals] = useState([]);
   const [assignedAmbulance, setAssignedAmbulance] = useState(null);
@@ -184,6 +190,7 @@ const AmbulanceDriverEnhanced = () => {
     if (!currentUser) {
       setAssignedCall(null);
       setDispatchHistory([]);
+      setAvailableCalls([]);
       return;
     }
 
@@ -198,8 +205,15 @@ const AmbulanceDriverEnhanced = () => {
 
         const driverCalls = calls.filter(matchesDriver);
         const activeCall = driverCalls.find((call) => ['pending', 'dispatched', 'transporting'].includes(call.status));
+        const openCalls = calls.filter(
+          (call) =>
+            ['pending', 'dispatched'].includes(call.status) &&
+            !call.assignedDriverId &&
+            !call.assignedDriver
+        );
         setAssignedCall(activeCall || null);
         setDispatchHistory(driverCalls.slice(0, 10));
+        setAvailableCalls(openCalls.slice(0, 10));
       },
       (error) => console.error('Error loading emergency calls:', error)
     );
@@ -410,7 +424,7 @@ const AmbulanceDriverEnhanced = () => {
               timestamp: now
             },
             patientInfo: {
-              phone: assignedCall?.callerPhone,
+              callerName: assignedCall?.callerName || 'Anonymous Caller',
               address: assignedCall?.address
             },
             eventType: 'driver_picked_up_patient'
@@ -444,6 +458,91 @@ const AmbulanceDriverEnhanced = () => {
           }
         }
       }
+    }
+  };
+
+  const handleSelectDestinationHospital = async (hospitalId) => {
+    if (!hospitalId) return;
+    const selectedHospital = hospitals.find((hospital) => hospital.id === hospitalId);
+    if (!selectedHospital) return;
+
+    setDestinationHospital(selectedHospital);
+    if (currentLocation && selectedHospital.location) {
+      calculateRoute(currentLocation, selectedHospital.location);
+    }
+
+    if (assignedCall?.id) {
+      try {
+        const callRef = doc(db, 'emergencyCalls', assignedCall.id);
+        await updateDoc(callRef, {
+          assignedHospitalId: selectedHospital.id,
+          assignedHospital: selectedHospital.name,
+          hospitalSelectedByDriverAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error('Error selecting destination hospital:', error);
+      }
+    }
+  };
+
+  const handlePickAvailableCall = async (call) => {
+    if (!call?.id || !currentUser?.uid || assignedCall) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const callRef = doc(db, 'emergencyCalls', call.id);
+    const driverRef = doc(db, 'users', currentUser.uid);
+    const ambulanceId = driverProfile?.ambulanceId || driverProfile?.assignedAmbulanceId;
+    const ambulanceRef = ambulanceId ? doc(db, 'ambulances', ambulanceId) : null;
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const currentCallDoc = await transaction.get(callRef);
+        if (!currentCallDoc.exists()) {
+          throw new Error('Emergency call no longer exists.');
+        }
+
+        const callData = currentCallDoc.data();
+        if (callData.assignedDriverId || callData.assignedDriver) {
+          throw new Error('This emergency was already picked by another driver.');
+        }
+
+        if (!['pending', 'dispatched'].includes(callData.status)) {
+          throw new Error('This emergency is no longer available.');
+        }
+
+        transaction.update(callRef, {
+          assignedDriverId: currentUser.uid,
+          assignedDriver: driverProfile?.name || 'Driver',
+          assignedVehicle: driverVehicleId || callData.assignedVehicle || null,
+          dispatchedAmbulance: driverVehicleId || callData.dispatchedAmbulance || null,
+          status: 'dispatched',
+          dispatchedAt: now,
+          assignmentMode: 'driver_pick',
+          pickedByDriverAt: now,
+        });
+
+        transaction.update(driverRef, {
+          status: 'dispatched',
+          assignedCallId: call.id,
+          dispatchedCallId: call.id,
+          lastStatusUpdatedAt: now,
+        });
+
+        if (ambulanceRef) {
+          transaction.update(ambulanceRef, {
+            status: 'dispatched',
+            currentCallId: call.id,
+          });
+        }
+      });
+
+      setStatus('dispatched');
+      alert('Emergency call picked successfully.');
+    } catch (error) {
+      console.error('Error picking emergency call:', error);
+      alert(error.message || 'Failed to pick emergency call.');
     }
   };
 
@@ -652,8 +751,12 @@ const AmbulanceDriverEnhanced = () => {
                   </span>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs text-gray-700"><strong>Phone:</strong> {assignedCall.callerPhone}</p>
+                  <p className="text-xs text-gray-700"><strong>Caller:</strong> {assignedCall.callerName || 'Anonymous Caller'}</p>
                   <p className="text-xs text-gray-700"><strong>Coordinates:</strong> {formatAddress(assignedCall.address, assignedCall.location)}</p>
+                  <p className="text-xs text-gray-700"><strong>Payment:</strong> {getPaymentMethodLabel(assignedCall.paymentMethod)}</p>
+                  {assignedCall.paymentMethod === 'medical_aid' && assignedCall.medicalAidName && (
+                    <p className="text-xs text-gray-700"><strong>Medical Aid:</strong> {assignedCall.medicalAidName}</p>
+                  )}
                   <p className="text-xs text-gray-700"><strong>Description:</strong> {assignedCall.description}</p>
                   <p className="text-xs text-gray-500">Dispatched: {formatTimestamp(assignedCall.timestamp, 'Timestamp unavailable')}</p>
                 </div>
@@ -693,8 +796,12 @@ const AmbulanceDriverEnhanced = () => {
                         </span>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-gray-700"><strong>Phone:</strong> {dispatch.callerPhone || 'Hidden'}</p>
+                        <p className="text-xs text-gray-700"><strong>Caller:</strong> {dispatch.callerName || 'Anonymous Caller'}</p>
                         <p className="text-xs text-gray-700"><strong>Address:</strong> {addressLabel}</p>
+                        <p className="text-xs text-gray-700"><strong>Payment:</strong> {getPaymentMethodLabel(dispatch.paymentMethod)}</p>
+                        {dispatch.paymentMethod === 'medical_aid' && dispatch.medicalAidName && (
+                          <p className="text-xs text-gray-700"><strong>Medical Aid:</strong> {dispatch.medicalAidName}</p>
+                        )}
                         {dispatch.description && (
                           <p className="text-xs text-gray-700"><strong>Description:</strong> {dispatch.description}</p>
                         )}
@@ -853,12 +960,16 @@ const AmbulanceDriverEnhanced = () => {
                         {assignedCall.roomNumber && (
                           <p className="text-xs text-gray-700">Room/House: {assignedCall.roomNumber}</p>
                         )}
+                        <p className="text-xs text-gray-700">Payment: {getPaymentMethodLabel(assignedCall.paymentMethod)}</p>
+                        {assignedCall.paymentMethod === 'medical_aid' && assignedCall.medicalAidName && (
+                          <p className="text-xs text-gray-700">Medical Aid: {assignedCall.medicalAidName}</p>
+                        )}
                       </div>
 
                       <div className="bg-gray-50 rounded-lg p-3">
                         <div className="flex items-center gap-2">
-                          <Phone className="w-3 h-3 text-gray-600" />
-                          <p className="text-xs text-gray-700">{assignedCall.callerPhone}</p>
+                          <User className="w-3 h-3 text-gray-600" />
+                          <p className="text-xs text-gray-700">{assignedCall.callerName || 'Anonymous Caller'}</p>
                         </div>
                       </div>
 
@@ -889,46 +1000,66 @@ const AmbulanceDriverEnhanced = () => {
                     </>
                   )}
 
-                  {stage === 'to_hospital' && destinationHospital && (
+                  {stage === 'to_hospital' && (
                     <>
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Hospital className="w-4 h-4 text-green-600" />
-                          <span className="text-xs font-semibold text-green-900">Destination Hospital</span>
-                        </div>
-                        <p className="text-xs font-semibold text-gray-900">{destinationHospital.name}</p>
-                        <p className="text-xs text-gray-700">{destinationHospital.address}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Clock className="w-3 h-3 text-green-600" />
-                          <span className="text-xs font-medium text-green-700">ETA: {getETA()}</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-blue-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-700">
-                          Available Units: {destinationHospital.totalUnits - destinationHospital.occupiedUnits}/{destinationHospital.totalUnits}
-                        </p>
-                        <p className="text-xs text-gray-700 mt-1">
-                          Contact: {destinationHospital.contactNumber}
-                        </p>
-                      </div>
-
-                      {canOpenExternalNavigation && (
-                        <button
-                          onClick={handleExternalNavigation}
-                          className="w-full bg-white border border-green-200 text-green-700 py-2 rounded-lg text-xs font-medium hover:bg-green-50 transition-all flex items-center justify-center gap-2"
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2">Select Destination Hospital</label>
+                        <select
+                          value={destinationHospital?.id || ''}
+                          onChange={(e) => handleSelectDestinationHospital(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
                         >
-                          <ExternalLink className="w-3 h-3" />
-                          Open Route in Google Maps
-                        </button>
-                      )}
+                          <option value="">Select hospital</option>
+                          {hospitals.map((hospital) => (
+                            <option key={hospital.id} value={hospital.id}>
+                              {hospital.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                      <button
-                        onClick={handleArrivedAtHospital}
-                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-cyan-700 transition-all"
-                      >
-                        Delivered to Hospital
-                      </button>
+                      {destinationHospital && (
+                        <>
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Hospital className="w-4 h-4 text-green-600" />
+                              <span className="text-xs font-semibold text-green-900">Destination Hospital</span>
+                            </div>
+                            <p className="text-xs font-semibold text-gray-900">{destinationHospital.name}</p>
+                            <p className="text-xs text-gray-700">{destinationHospital.address}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Clock className="w-3 h-3 text-green-600" />
+                              <span className="text-xs font-medium text-green-700">ETA: {getETA()}</span>
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-50 rounded-lg p-3">
+                            <p className="text-xs text-gray-700">
+                              Available Units: {destinationHospital.totalUnits - destinationHospital.occupiedUnits}/{destinationHospital.totalUnits}
+                            </p>
+                            <p className="text-xs text-gray-700 mt-1">
+                              Contact: {destinationHospital.contactNumber}
+                            </p>
+                          </div>
+
+                          {canOpenExternalNavigation && (
+                            <button
+                              onClick={handleExternalNavigation}
+                              className="w-full bg-white border border-green-200 text-green-700 py-2 rounded-lg text-xs font-medium hover:bg-green-50 transition-all flex items-center justify-center gap-2"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Open Route in Google Maps
+                            </button>
+                          )}
+
+                          <button
+                            onClick={handleArrivedAtHospital}
+                            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-cyan-700 transition-all"
+                          >
+                            Delivered to Hospital
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -943,6 +1074,41 @@ const AmbulanceDriverEnhanced = () => {
                   </div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-1">Available for Dispatch</h3>
                   <p className="text-xs text-gray-600">Waiting for emergency call assignment</p>
+                </div>
+              </div>
+            )}
+
+            {!assignedCall && (
+              <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+                <h2 className="text-sm font-semibold mb-3">Available Unassigned Calls</h2>
+                <div className="space-y-3">
+                  {availableCalls.length === 0 && (
+                    <p className="text-xs text-gray-500">No unassigned emergency calls right now.</p>
+                  )}
+                  {availableCalls.map((call) => (
+                    <div key={call.id} className="border border-gray-200 rounded-lg p-3">
+                      <div className="flex justify-between items-start gap-2 mb-2">
+                        <p className="text-xs font-semibold text-gray-900">Call #{call.id.substring(0, 8)}</p>
+                        <span className="text-[11px] text-gray-500">
+                          {formatTimestamp(call.timestamp || call.callCreatedAt, 'N/A')}
+                        </span>
+                      </div>
+                      <div className="space-y-1 mb-3">
+                        <p className="text-xs text-gray-700"><strong>Caller:</strong> {call.callerName || 'Anonymous Caller'}</p>
+                        <p className="text-xs text-gray-700"><strong>Location:</strong> {formatAddress(call.address, call.location)}</p>
+                        <p className="text-xs text-gray-700"><strong>Payment:</strong> {getPaymentMethodLabel(call.paymentMethod)}</p>
+                        {call.paymentMethod === 'medical_aid' && call.medicalAidName && (
+                          <p className="text-xs text-gray-700"><strong>Medical Aid:</strong> {call.medicalAidName}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handlePickAvailableCall(call)}
+                        className="w-full bg-blue-600 text-white py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        Pick This Call
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

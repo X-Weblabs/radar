@@ -11,7 +11,9 @@ import {
   AlertCircle,
   Bed,
   UserPlus,
-  TrendingUp
+  TrendingUp,
+  Shield,
+  CheckCircle
 } from 'lucide-react';
 
 const Sidebar = ({ activeSection, onSectionChange, userRole, stats }) => {
@@ -40,6 +42,12 @@ const Sidebar = ({ activeSection, onSectionChange, userRole, stats }) => {
           { id: 'dispatch', name: 'Current Dispatch', icon: AlertCircle },
           { id: 'navigation', name: 'Navigation', icon: Navigation },
           { id: 'stats', name: 'Statistics', icon: Activity },
+        ];
+      case 'police':
+        return [
+          { id: 'dashboard', name: 'Verification Panel', icon: Shield },
+          { id: 'live-map', name: 'Live Tracking', icon: Map },
+          { id: 'history', name: 'Resolved Cases', icon: Activity },
         ];
       default:
         return [];
@@ -108,6 +116,35 @@ const Sidebar = ({ activeSection, onSectionChange, userRole, stats }) => {
                 <span className="text-xs text-gray-700">Active Calls</span>
               </div>
               <span className="text-sm font-bold text-gray-900">{stats.activeCalls || 0}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {userRole === 'police' && stats && (
+        <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-br from-red-50 to-red-100">
+          <h3 className="text-xs font-semibold text-gray-700 mb-2">Police Authority</h3>
+          <div className="space-y-2">
+            <div 
+              className="flex items-center justify-between p-2 bg-white rounded-lg cursor-pointer hover:bg-red-50 transition-colors"
+              onClick={() => onSectionChange('dashboard')}
+            >
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-red-600" />
+                <span className="text-xs text-gray-700">Pending</span>
+              </div>
+              <span className="text-sm font-bold text-gray-900">{stats.pendingApproval || 0}</span>
+            </div>
+            
+            <div 
+              className="flex items-center justify-between p-2 bg-white rounded-lg cursor-pointer hover:bg-red-50 transition-colors"
+              onClick={() => onSectionChange('history')}
+            >
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-xs text-gray-700">Approved</span>
+              </div>
+              <span className="text-sm font-bold text-gray-900">{stats.approvedTotal || 0}</span>
             </div>
           </div>
         </div>

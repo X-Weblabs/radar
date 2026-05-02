@@ -20,6 +20,7 @@ const Header = ({ title, subtitle }) => {
       'admin': 'System Admin',
       'hospital': 'Hospital Admin',
       'driver': 'Ambulance Driver',
+      'police': 'Police Admin',
     };
     return roleMap[role] || role;
   };

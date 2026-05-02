@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AlertCircle, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,6 +31,9 @@ const Login = () => {
             break;
           case 'driver':
             navigate('/driver');
+            break;
+          case 'police':
+            navigate('/police');
             break;
           default:
             navigate('/');
@@ -117,9 +120,10 @@ const Login = () => {
         </div>
 
         <div className="mt-3 text-center">
-          <a href="/" className="text-xs text-gray-600 hover:text-red-700 font-medium">
-            Emergency? Click here to call for help →
-          </a>
+          <p className="text-xs text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-red-600 font-medium hover:underline">Register here</Link>
+          </p>
         </div>
 
         <div className="mt-4 pt-4 border-t border-gray-200">
