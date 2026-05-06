@@ -123,6 +123,7 @@ const HospitalAdminNew = () => {
 
     registerCallListener('assignedHospitalId', userHospitalId);
     registerCallListener('assignedHospital', userHospitalName);
+    registerCallListener('status', 'awaiting_police_approval');
 
     return () => {
       unsubscribeHospitals();
@@ -1031,10 +1032,20 @@ const HospitalAdminNew = () => {
                   <span className={`px-2 py-1 rounded-md text-xs font-medium ${
                     call.status === 'dispatched' ? 'bg-blue-100 text-blue-700' :
                     call.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    call.status === 'awaiting_police_approval' ? 'bg-red-50 text-red-700 border border-red-200' :
                     'bg-yellow-100 text-yellow-700'
                   }`}>
                     {call.status}
                   </span>
+                  {call.status === 'awaiting_police_approval' ? (
+                    <span className="px-2 py-1 bg-red-600 text-white text-[10px] font-bold rounded uppercase animate-pulse">
+                      Not cleared by Police
+                    </span>
+                  ) : call.policeApproved && (
+                    <span className="px-2 py-1 bg-green-600 text-white text-[10px] font-bold rounded uppercase">
+                      Cleared by Police
+                    </span>
+                  )}
                   {call.priority === 'urgent' && (
                     <span className="px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-700">
                       Urgent

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, ChevronDown } from 'lucide-react';
+import { LogOut, User, ChevronDown, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const Header = ({ title, subtitle }) => {
+const Header = ({ title, subtitle, onMenuClick }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const { currentUser, userRole, signOut } = useAuth();
   const navigate = useNavigate();
@@ -26,22 +26,30 @@ const Header = ({ title, subtitle }) => {
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
-          {subtitle && <p className="text-xs text-gray-600">{subtitle}</p>}
+    <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-30">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onMenuClick}
+            className="lg:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900 truncate max-w-[200px] sm:max-w-none">{title}</h1>
+            {subtitle && <p className="text-xs text-gray-600 hidden sm:block">{subtitle}</p>}
+          </div>
         </div>
         
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
               <User className="w-4 h-4 text-white" />
             </div>
-            <div className="text-left">
+            <div className="text-left hidden md:block">
               <p className="text-xs font-medium text-gray-900">{currentUser?.email}</p>
               <p className="text-xs text-gray-500">{getRoleDisplayName(userRole)}</p>
             </div>

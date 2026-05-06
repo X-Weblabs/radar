@@ -12,6 +12,7 @@ const PoliceAdmin = () => {
   const [pendingCalls, setPendingCalls] = useState([]);
   const [approvedCalls, setApprovedCalls] = useState([]);
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { signOut, currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -105,7 +106,7 @@ const PoliceAdmin = () => {
     <div className="space-y-6">
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-red-100 rounded-lg text-red-600">
               <AlertTriangle className="w-6 h-6" />
@@ -116,7 +117,7 @@ const PoliceAdmin = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-green-100 rounded-lg text-green-600">
               <CheckCircle className="w-6 h-6" />
@@ -132,7 +133,7 @@ const PoliceAdmin = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg text-blue-600">
               <Clock className="w-6 h-6" />
@@ -165,26 +166,26 @@ const PoliceAdmin = () => {
             </div>
           ) : (
             pendingCalls.map(call => (
-              <div key={call.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={call.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
+                  <div className="space-y-3 min-w-0">
+                    <div className="flex items-center flex-wrap gap-2 sm:gap-3">
                       <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider rounded">
                         Emergency #{call.id.substring(0, 6)}
                       </span>
                       <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3.h-3" />
+                        <Clock className="w-3 h-3" />
                         {formatTimestamp(call.timestamp)}
                       </span>
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">{call.callerName || 'Anonymous Caller'}</h3>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">{call.callerName || 'Anonymous Caller'}</h3>
                       <p className="text-gray-600 text-sm max-w-2xl leading-relaxed">{call.description}</p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-gray-500">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-red-500" />
-                        <span>{call.address || 'Location data available'}</span>
+                        <span className="truncate max-w-[200px] sm:max-w-none">{call.address || 'Location data available'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Shield className="w-3 h-3 text-blue-500" />
@@ -192,20 +193,20 @@ const PoliceAdmin = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
                     <button
                       onClick={() => handleReject(call.id)}
-                      className="flex-1 lg:flex-none px-6 py-2.5 border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
                     >
                       <XCircle className="w-4 h-4" />
                       Reject
                     </button>
                     <button
                       onClick={() => handleApprove(call.id)}
-                      className="flex-1 lg:flex-none px-8 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg hover:shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto px-8 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg hover:shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
                     >
                       <CheckCircle className="w-4 h-4" />
-                      Approve & Dispatch
+                      Cleared
                     </button>
                   </div>
                 </div>
@@ -278,8 +279,9 @@ const PoliceAdmin = () => {
       <Header 
         title="Police Admin Dashboard" 
         subtitle="Emergency Verification & Response Authorization" 
+        onMenuClick={() => setIsSidebarOpen(true)}
       />
-      <div className="flex">
+      <div className="flex overflow-hidden">
         <Sidebar 
           activeSection={activeSection} 
           onSectionChange={setActiveSection}
@@ -288,8 +290,10 @@ const PoliceAdmin = () => {
             pendingApproval: pendingCalls.length,
             approvedTotal: approvedCalls.length
           }}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {activeSection === 'dashboard' && renderDashboard()}
             {activeSection === 'history' && renderHistory()}

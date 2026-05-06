@@ -38,6 +38,17 @@ const credentials = [
       'Same permissions as Hope — ideal for multi-driver demos'
     ],
   },
+  {
+    role: 'Police Admin',
+    email: 'police01@gmail.com',
+    password: 'admin123',
+    abilities: [
+      'First point of contact for all incoming emergency calls',
+      'Responsible for verifying and clearing emergencies before dispatch',
+      'Prevents false alarms and ensures situational awareness for responders',
+      'Hospitals and drivers see calls immediately but wait for police clearance'
+    ],
+  },
 ];
 
 const SystemDocs = () => {
@@ -93,10 +104,15 @@ const SystemDocs = () => {
               </p>
             </div>
             <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-gray-900">Police Admin (/police)</h3>
+              <p className="mt-1 text-xs text-gray-600">
+                The gatekeeper for all emergencies. They receive the initial call, verify the situation, and click "Cleared" to initiate the hospital/ambulance dispatch. They ensure only valid calls proceed.
+              </p>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-gray-900">Ambulance Drivers (/driver)</h3>
               <p className="mt-1 text-xs text-gray-600">
-                Receive dispatches, run live navigation, and push their location/status back to the database.
-                Their screens highlight current calls, patient details, and "Forward Dispatch" actions.
+                Receive dispatches after police clearance, run live navigation, and push their location/status back to the database. Their screens highlight verified calls and "Not cleared by Police" warnings.
               </p>
             </div>
           </div>
@@ -206,10 +222,11 @@ const SystemDocs = () => {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-gray-900">How the Workflow Fits Together</h2>
           <ul className="list-disc list-inside text-sm text-gray-700 space-y-2">
-            <li><strong>Emergency Caller (/)</strong>: submits a request that appears instantly in the admin dashboards and triggers the AI dispatch webhook, which assigns the closest available driver.</li>
-            <li><strong>System Admin</strong>: watches the real-time timeline plus every dispatched ambulance.</li>
-            <li><strong>Hospital Admin</strong>: sees only the calls routed to their facility, adjusts bed capacity, and tracks en-route units; they also manage drivers and ambulances.</li>
-            <li><strong>Drivers</strong>: follow the in-app prompts (arrive → transport → hospital) so every action is written back to the database and visible to admins.</li>
+            <li><strong>Emergency Caller (/)</strong>: submits a request that appears instantly across all dashboards.</li>
+            <li><strong>Police Admin (/police)</strong>: verifies the call and marks it as "Cleared", which triggers the AI dispatch webhook.</li>
+            <li><strong>System Admin</strong>: watches the real-time timeline plus every dispatched ambulance and police verification status.</li>
+            <li><strong>Hospital Admin</strong>: sees calls immediately (with a red "Not cleared" badge), tracks en-route units, and adjusts capacity.</li>
+            <li><strong>Drivers</strong>: see available calls immediately but wait for the green "Cleared by Police" badge before acting; they then follow the navigation prompts.</li>
           </ul>
           <p className="text-xs text-gray-600">
             For deeper feature references, see the supplied markdown guides (Hospital Management, Location Tracking, Webhook Integration, etc.). They map directly to what you observe here.

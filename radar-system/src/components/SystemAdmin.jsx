@@ -35,6 +35,7 @@ const SystemAdmin = () => {
   const [selectedCall, setSelectedCall] = useState(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [pendingLocation, setPendingLocation] = useState(defaultCenter);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { isLoaded: mapsLoaded } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
   });
@@ -614,10 +615,20 @@ const SystemAdmin = () => {
                             <span className={`px-2 py-1 rounded-md text-xs font-medium ${
                               call.status === 'dispatched' ? 'bg-blue-100 text-blue-700' :
                               call.status === 'completed' ? 'bg-green-100 text-green-700' :
+                              call.status === 'awaiting_police_approval' ? 'bg-red-50 text-red-700 border border-red-200' :
                               'bg-red-100 text-red-700'
                             }`}>
                               {call.status}
                             </span>
+                            {call.status === 'awaiting_police_approval' ? (
+                              <span className="px-2 py-1 bg-red-600 text-white text-[10px] font-bold rounded uppercase animate-pulse">
+                                Not cleared by Police
+                              </span>
+                            ) : call.policeApproved && (
+                              <span className="px-2 py-1 bg-green-600 text-white text-[10px] font-bold rounded uppercase">
+                                Cleared by Police
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-gray-600">Phone: {call.callerPhone}</p>
                           <p className="text-xs text-gray-600">Location: {call.address || 'GPS Coordinates'}</p>
@@ -652,18 +663,24 @@ const SystemAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header title="System Administrator" subtitle="Radar Emergency Response System" />
-      <div className="flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header 
+        title="System Administrator" 
+        subtitle="Radar Emergency Response System" 
+        onMenuClick={() => setIsSidebarOpen(true)}
+      />
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar 
           activeSection={activeSection} 
           onSectionChange={setActiveSection}
           userRole="admin"
           stats={sidebarStats}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
-        <div className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           {renderContent()}
-        </div>
+        </main>
       </div>
 
       {/* Emergency Call Timeline Modal */}

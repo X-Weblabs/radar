@@ -207,7 +207,7 @@ const AmbulanceDriverEnhanced = () => {
         const activeCall = driverCalls.find((call) => ['pending', 'dispatched', 'transporting'].includes(call.status));
         const openCalls = calls.filter(
           (call) =>
-            ['pending', 'dispatched'].includes(call.status) &&
+            (['pending', 'dispatched', 'awaiting_police_approval'].includes(call.status)) &&
             !call.assignedDriverId &&
             !call.assignedDriver
         );
@@ -1089,9 +1089,20 @@ const AmbulanceDriverEnhanced = () => {
                     <div key={call.id} className="border border-gray-200 rounded-lg p-3">
                       <div className="flex justify-between items-start gap-2 mb-2">
                         <p className="text-xs font-semibold text-gray-900">Call #{call.id.substring(0, 8)}</p>
-                        <span className="text-[11px] text-gray-500">
-                          {formatTimestamp(call.timestamp || call.callCreatedAt, 'N/A')}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-[11px] text-gray-500">
+                            {formatTimestamp(call.timestamp || call.callCreatedAt, 'N/A')}
+                          </span>
+                          {call.status === 'awaiting_police_approval' ? (
+                            <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] font-bold rounded uppercase animate-pulse">
+                              Not cleared by Police
+                            </span>
+                          ) : call.policeApproved && (
+                            <span className="px-2 py-0.5 bg-green-600 text-white text-[10px] font-bold rounded uppercase">
+                              Cleared by Police
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="space-y-1 mb-3">
                         <p className="text-xs text-gray-700"><strong>Caller:</strong> {call.callerName || 'Anonymous Caller'}</p>
